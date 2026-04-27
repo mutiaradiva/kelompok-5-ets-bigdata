@@ -41,17 +41,17 @@ Jalankan Kafka & Hadoop:
 ```
 docker compose -f docker-compose-kafka.yml up -d
 docker compose -f docker-compose-hadoop.yml up -d
-
 ```
 
-### Masuk ke container
+Masuk ke container
 ```
 docker exec -it kafka-broker bash
 ```
 
-### Membuat topik
+Membuat topik
 ```
 /opt/kafka/bin/kafka-topics.sh --create --topic airquality-api --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092
-/opt/kafka/bin/kafka-topics.sh --create --topic airquality-rss --partitions 1 --replication-factor 1 
---bootstrap-server localhost:9092
+/opt/kafka/bin/kafka-topics.sh --create --topic airquality-rss --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092
 ```
+<img width="1546" height="153" alt="Screenshot 2026-04-27 194828" src="https://github.com/user-attachments/assets/2f6aaa0b-f6ba-4bc1-a040-4eaf604bed72" />
+

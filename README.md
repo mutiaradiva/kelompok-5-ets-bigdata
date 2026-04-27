@@ -7,8 +7,7 @@
 - Mutiara Diva Jaladitha — 5027241083
 - Moch Rizki Nasrullah — 5027241038
 
-## Topik
-### Topik 3 — 🌫️ AirQuality Alert: Indeks Kualitas Udara Jawa Timur
+### Topik 3 — AirQuality Alert: Indeks Kualitas Udara Jawa Timur
 
 **Skenario klien:** Dinas Kesehatan Provinsi Jawa Timur yang ingin memantau AQI kota-kota besar dan mengirimkan peringatan saat kualitas udara memburuk.
 
@@ -34,3 +33,25 @@
 3. **Kota dengan AQI terburuk:** ranking kota dari rata-rata AQI tertinggi ke terendah, sertakan jumlah event "Tidak Sehat" atau lebih buruk
 
 **Fokus dashboard:** Tabel AQI per kota dengan indikator warna (hijau/kuning/oranye/merah) · Kategorisasi kondisi · Berita lingkungan
+
+---
+
+### Cara Menjalankan
+Jalankan Kafka & Hadoop:
+```
+docker compose -f docker-compose-kafka.yml up -d
+docker compose -f docker-compose-hadoop.yml up -d
+
+```
+
+### Masuk ke container
+```
+docker exec -it kafka-broker bash
+```
+
+### Membuat topik
+```
+/opt/kafka/bin/kafka-topics.sh --create --topic airquality-api --partitions 1 --replication-factor 1 --bootstrap-server localhost:9092
+/opt/kafka/bin/kafka-topics.sh --create --topic airquality-rss --partitions 1 --replication-factor 1 
+--bootstrap-server localhost:9092
+```

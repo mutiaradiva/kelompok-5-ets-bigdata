@@ -55,3 +55,26 @@ Membuat topik
 ```
 <img width="1546" height="153" alt="Screenshot 2026-04-27 194828" src="https://github.com/user-attachments/assets/2f6aaa0b-f6ba-4bc1-a040-4eaf604bed72" />
 
+---
+
+### Integrasi API Eksternal
+**File Utama:** `kafka/producer_api.py`
+
+Bagian ini bertanggung jawab untuk melakukan *ingestion* data kualitas udara secara *real-time* dari API eksternal ke dalam sistem Kafka.
+
+**Fitur yang Diimplementasikan:**
+* **Sumber Data:** Terintegrasi dengan **AQICN API** untuk memantau 5 kota di wilayah Gerbangkertasusila (Surabaya, Malang, Sidoarjo, Gresik, Mojokerto).
+* **Bypass Koordinat:** Menggunakan *mapping* titik koordinat GPS (`geo:lat;lng`) untuk pencarian data guna mengatasi masalah "Unknown station" pada API bawaan.
+* **Keandalan Data (Kafka):** Konfigurasi producer menggunakan `acks='all'` dan `enable_idempotence=True` untuk menjamin tidak ada data yang hilang atau duplikat (Exactly-Once Semantics/At-Least-Once yang andal).
+* **Automasi & Standarisasi:** *Polling* berjalan terus-menerus dengan interval **15 menit**, dan data distandarisasi ke format JSON lengkap dengan `timestamp` (ISO 8601).
+
+**Cara Menjalankan:**
+1. Pastikan *library* Python yang dibutuhkan sudah terinstal:
+   ```
+   pip install kafka-python requests
+   ```
+2. Jalankan *script* producer *API*:
+   ```
+   python kafka/producer_api.py
+   ```
+  <img width="519" height="175" alt="image" src="https://github.com/user-attachments/assets/e70cbc13-fa56-40e3-ac14-58690c1ab46a" />

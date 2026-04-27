@@ -1,10 +1,13 @@
+import os
 import time
 import json
 import requests
 from datetime import datetime, timezone
 from kafka import KafkaProducer
 
-API_TOKEN = '93e8ac90f39412077ccde8c0f925529344a80d82' 
+API_TOKEN = os.getenv('AQICN_API_TOKEN', '93e8ac90f39412077ccde8c0f925529344a80d82')
+BOOTSTRAP_SERVERS = [server.strip() for server in os.getenv('KAFKA_BOOTSTRAP_SERVERS', 'localhost:9092').split(',') if server.strip()]
+POLL_INTERVAL_SECONDS = int(os.getenv('POLL_INTERVAL_SECONDS', '900'))
 
 CITIES = {
     'Surabaya': '-7.2504;112.7688',
@@ -17,7 +20,7 @@ CITIES = {
 BASE_URL = 'https://api.waqi.info/feed/geo:{}/?token={}'
 
 producer = KafkaProducer(
-    bootstrap_servers=['localhost:9092'],
+    bootstrap_servers=BOOTSTRAP_SERVERS,
     value_serializer=lambda v: json.dumps(v).encode('utf-8'),
     key_serializer=lambda k: k.encode('utf-8'),
     acks='all',
@@ -62,8 +65,8 @@ if __name__ == "__main__":
             
             producer.flush() 
             
-            print("Menunggu 15 menit untuk siklus berikutnya...")
-            time.sleep(900)
+            print(f"Menunggu {POLL_INTERVAL_SECONDS // 60} menit untuk siklus berikutnya...")
+            time.sleep(POLL_INTERVAL_SECONDS)
             
     except KeyboardInterrupt:
         print("\nProducer dihentikan secara manual.")

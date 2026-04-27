@@ -9,9 +9,21 @@ services:
       - "8020:8020"   # NameNode RPC
     environment:
       ENSURE_NAMENODE_DIR: /tmp/hadoop-hadoop/dfs/name
+      CORE-SITE.XML_fs.defaultFS: hdfs://namenode:8020
+      HDFS-SITE.XML_dfs.replication: 1
+      HDFS-SITE.XML_dfs.namenode.rpc-address: namenode:8020
+      HDFS-SITE.XML_dfs.namenode.name.dir: /tmp/hadoop-hadoop/dfs/name
     env_file:
       - ./hadoop.env
+    cap_add:
+      - SYS_RESOURCE
     command: ["hdfs", "namenode"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9870"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   datanode:
     image: apache/hadoop:3
@@ -20,7 +32,13 @@ services:
     container_name: hadoop-datanode
     depends_on:
       namenode:
-        condition: service_started
+        condition: service_healthy
+    environment:
+      CORE-SITE.XML_fs.defaultFS: hdfs://namenode:8020
+      HDFS-SITE.XML_dfs.replication: 1
+      HDFS-SITE.XML_dfs.datanode.address: datanode:9866
+      HDFS-SITE.XML_dfs.datanode.http.address: datanode:9864
+      HDFS-SITE.XML_dfs.datanode.ipc.address: datanode:9867
     env_file:
       - ./hadoop.env
     command: ["hdfs", "datanode"]
@@ -31,10 +49,16 @@ services:
     hostname: resourcemanager
     container_name: hadoop-resourcemanager
     depends_on:
-      datanode:
-        condition: service_started
+      namenode:
+        condition: service_healthy
     ports:
       - "8088:8088"   # ResourceManager Web UI
+    environment:
+      CORE-SITE.XML_fs.defaultFS: hdfs://namenode:8020
+      YARN-SITE.XML_yarn.resourcemanager.hostname: resourcemanager
+      YARN-SITE.XML_yarn.resourcemanager.address: resourcemanager:8032
+      YARN-SITE.XML_yarn.resourcemanager.scheduler.address: resourcemanager:8030
+      YARN-SITE.XML_yarn.resourcemanager.resource-tracker.address: resourcemanager:8031
     env_file:
       - ./hadoop.env
     command: ["yarn", "resourcemanager"]
@@ -49,6 +73,16 @@ services:
         condition: service_started
     ports:
       - "8042:8042"   # NodeManager Web UI
+    environment:
+      CORE-SITE.XML_fs.defaultFS: hdfs://namenode:8020
+      YARN-SITE.XML_yarn.resourcemanager.hostname: resourcemanager
+      YARN-SITE.XML_yarn.resourcemanager.address: resourcemanager:8032
+      YARN-SITE.XML_yarn.resourcemanager.scheduler.address: resourcemanager:8030
+      YARN-SITE.XML_yarn.resourcemanager.resource-tracker.address: resourcemanager:8031
+      YARN-SITE.XML_yarn.nodemanager.resource.memory-mb: 4096
+      YARN-SITE.XML_yarn.nodemanager.resource.cpu-vcores: 4
+      YARN-SITE.XML_yarn.nodemanager.aux-services: mapreduce_shuffle
+      YARN-SITE.XML_yarn.nodemanager.aux-services.mapreduce.shuffle.class: org.apache.hadoop.mapred.ShuffleHandler
     env_file:
       - ./hadoop.env
     command: ["yarn", "nodemanager"]

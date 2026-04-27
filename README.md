@@ -37,7 +37,12 @@
 ---
 
 ### Cara Menjalankan
-Jalankan Kafka & Hadoop:
+Sebelum menjalankan Docker Compose, buat file `.env` di root project dan isi token AQICN:
+```
+AQICN_API_TOKEN=token_kamu_di_sini
+```
+
+Jalankan Kafka, producer API, & Hadoop:
 ```
 docker compose -f docker-compose-kafka.yml up -d
 docker compose -f docker-compose-hadoop.yml up -d
@@ -69,12 +74,172 @@ Bagian ini bertanggung jawab untuk melakukan *ingestion* data kualitas udara sec
 * **Automasi & Standarisasi:** *Polling* berjalan terus-menerus dengan interval **15 menit**, dan data distandarisasi ke format JSON lengkap dengan `timestamp` (ISO 8601).
 
 **Cara Menjalankan:**
-1. Pastikan *library* Python yang dibutuhkan sudah terinstal:
+1. Jalankan service Kafka dan producer API lewat Docker Compose:
+   ```
+   docker compose -f docker-compose-kafka.yml up -d --build
+   ```
+   Compose akan otomatis membaca `AQICN_API_TOKEN` dari file `.env` di root project.
+2. Jika ingin menjalankan script langsung di host, pasang dependensi Python terlebih dahulu:
    ```
    pip install kafka-python requests
    ```
-2. Jalankan *script* producer *API*:
+3. Jalankan *script* producer *API* secara manual hanya jika tidak memakai container:
    ```
    python kafka/producer_api.py
    ```
   <img width="519" height="175" alt="image" src="https://github.com/user-attachments/assets/e70cbc13-fa56-40e3-ac14-58690c1ab46a" />
+
+---
+
+### Integrasi RSS Feed (Producer RSS)
+**File Utama:** `kafka/producer_rss.py`
+
+Bagian ini melakukan *ingestion* berita kualitas udara dari RSS feed secara berkala ke topik Kafka `airquality-rss`.
+
+**Fitur yang Diimplementasikan:**
+* **Sumber Data:** Google News RSS (query `polusi udara jawa timur`) sebagai sumber utama, dengan Kompas Sains/Environment sebagai sumber backup.
+* **Deduplication:** Menyimpan set URL berita yang sudah dikirim sehingga berita yang sama tidak dikirim dua kali dalam satu sesi.
+* **Keandalan Koneksi:** Menggunakan retry logic dengan 10 percobaan dan jeda 10 detik per percobaan agar tahan jika Kafka broker belum siap.
+* **Interval Polling:** Berjalan terus-menerus dengan interval **5 menit**.
+
+**Cara Menjalankan:**
+
+1. Pastikan Kafka sudah berjalan (lihat bagian *Cara Menjalankan* di atas).
+2. Install dependensi Python:
+   ```bash
+   pip install kafka-python feedparser
+   ```
+3. Jalankan producer RSS dari root project:
+   ```bash
+   python kafka/producer_rss.py
+   ```
+4. Output sukses yang diharapkan:
+   ```
+   [Kafka] Mencoba connect ke ['localhost:9092'] (percobaan 1/10)...
+   [Kafka] Berhasil connect ke broker!
+   --- Memeriksa RSS Feed pada 2026-04-28 01:00:00 ---
+   Mengambil RSS feed dari: https://news.google.com/rss/...
+     Terkirim: Kualitas Udara Surabaya Memburuk... (key: a1b2c3d4)
+     Total 5 berita baru dikirim ke Kafka.
+   Menunggu 5 menit untuk siklus berikutnya...
+   ```
+
+---
+
+### Consumer to HDFS
+**File Utama:** `kafka/consumer_to_hdfs.py`
+
+Bagian ini membaca pesan dari kedua topik Kafka (`airquality-api` dan `airquality-rss`) secara paralel, lalu menyimpannya ke HDFS dan memperbarui data dashboard lokal.
+
+**Fitur yang Diimplementasikan:**
+* **Dual Thread:** Menjalankan dua consumer secara paralel dalam thread terpisah — satu untuk topik API, satu untuk topik RSS.
+* **Buffer & Batch Write:** Data diakumulasi dalam buffer dan di-flush ke HDFS setiap **2 menit** dalam format JSON array.
+* **Upload ke HDFS (Windows-compatible):** Menggunakan `docker cp` untuk menyalin file dari host ke container, lalu `hdfs dfs -put` dari dalam container — karena `docker exec` tidak bisa mengakses path file Windows secara langsung.
+* **Dashboard Update:** Menyimpan 50 event terakhir ke `dashboard/data/live_api.json` dan `dashboard/data/live_rss.json` untuk keperluan visualisasi real-time.
+
+**Cara Menjalankan:**
+
+1. Pastikan Kafka **dan** Hadoop sudah berjalan:
+   ```bash
+   docker compose -f docker-compose-kafka.yml up -d
+   docker compose -f docker-compose-hadoop.yml up -d
+   ```
+2. Install dependensi Python:
+   ```bash
+   pip install kafka-python
+   ```
+3. Jalankan consumer dari folder `kafka/`:
+   ```bash
+   python kafka/consumer_to_hdfs.py
+   ```
+4. Output sukses yang diharapkan:
+   ```
+   Menjalankan Consumer to HDFS & Dashboard...
+   Mulai membaca dari topik: airquality-rss
+   Mulai membaca dari topik: airquality-api
+   [airquality-api] Mencatat 5 event ke HDFS & Dashboard...
+   Berhasil menyimpan ke HDFS: /data/airquality/api/airquality-api_2026-04-28_01-00-00.json
+   [airquality-rss] Mencatat 12 event ke HDFS & Dashboard...
+   Berhasil menyimpan ke HDFS: /data/airquality/rss/airquality-rss_2026-04-28_01-00-00.json
+   ```
+
+> **Catatan:** Consumer menggunakan `auto_offset_reset="earliest"` sehingga saat pertama kali dijalankan akan membaca **semua pesan** yang sudah ada di topik sejak awal.
+
+---
+
+### Cara Verifikasi (Testing)
+
+#### 1. Cek Topik Kafka Berisi Data
+Masuk ke container Kafka dan lihat pesan yang masuk:
+```bash
+# Lihat pesan di topik airquality-api
+docker exec -it kafka-broker /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 \
+  --topic airquality-api \
+  --from-beginning \
+  --max-messages 5
+
+# Lihat pesan di topik airquality-rss
+docker exec -it kafka-broker /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 \
+  --topic airquality-rss \
+  --from-beginning \
+  --max-messages 5
+```
+
+#### 2. Cek Consumer Group Aktif
+```bash
+docker exec kafka-broker /opt/kafka/bin/kafka-consumer-groups.sh \
+  --bootstrap-server localhost:9092 \
+  --list
+```
+Output yang diharapkan:
+```
+hdfs_consumer_airquality-rss_group
+hdfs_consumer_airquality-api_group
+```
+
+#### 3. Cek File Tersimpan di HDFS
+```bash
+# Cek direktori
+docker exec hadoop-namenode hdfs dfs -ls /data/airquality/
+
+# Cek isi folder API
+docker exec hadoop-namenode hdfs dfs -ls /data/airquality/api/
+
+# Cek isi folder RSS
+docker exec hadoop-namenode hdfs dfs -ls /data/airquality/rss/
+```
+Output yang diharapkan:
+```
+Found 2 items
+drwxr-xr-x   - hadoop supergroup  0 ... /data/airquality/api
+drwxr-xr-x   - hadoop supergroup  0 ... /data/airquality/rss
+```
+
+#### 4. Baca Isi File JSON di HDFS
+```bash
+# Lihat isi file terakhir yang tersimpan (ganti nama file sesuai output ls)
+docker exec hadoop-namenode hdfs dfs -cat /data/airquality/api/airquality-api_2026-04-28_01-00-00.json
+```
+
+#### 5. Cek HDFS via Web UI
+Buka browser dan akses NameNode Web UI:
+```
+http://localhost:9870
+```
+Navigasi ke **Utilities → Browse the file system** → masuk ke path `/data/airquality/`.
+
+<img width="1000" alt="HDFS Web UI" src="https://github.com/user-attachments/assets/placeholder-hdfs-ui" />
+
+---
+
+### Troubleshooting
+
+| Error | Penyebab | Solusi |
+|-------|----------|--------|
+| `KafkaTimeoutError: Failed to update metadata` | Kafka broker belum ready atau salah alamat | Tunggu beberapa detik lalu coba lagi. Pastikan `localhost:9092` bisa diakses dari host |
+| `No such container: namenode` | Nama container salah | Nama yang benar adalah `hadoop-namenode` (sesuai `container_name` di compose) |
+| `Gagal menyimpan ke HDFS (docker cp)` | HDFS belum ready atau namenode belum healthy | Cek status: `docker ps` dan pastikan `hadoop-namenode` statusnya `(healthy)` |
+| Container Hadoop langsung exit | Format env var salah di `hadoop.env` | Gunakan format `CORE-SITE.XML_key=value` (bukan `CORE_CONF_`) sesuai image `apache/hadoop:3` |
+| `ValueError: too many values to unpack` (di log container) | Sama seperti di atas | Lihat baris di atas |

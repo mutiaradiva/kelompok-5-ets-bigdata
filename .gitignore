@@ -1,1 +1,9 @@
 .env
+
+# Virtual environ
+venv/
+.venv/
+env/
+
+# Project data (arahan readme)
+dashboard/data/

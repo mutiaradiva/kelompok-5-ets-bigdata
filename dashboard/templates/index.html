@@ -6,7 +6,7 @@
   <title>Pemantauan Kualitas Udara Jawa Timur</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
-    /* [MochRizki]: Base */
+    /* [Naufal Ardhana — 5027241118]: Base */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
@@ -509,7 +509,7 @@
 </div><!-- /layout -->
 
 <script>
-  // [MochRizki]: Dashboard logic
+  // [Naufal Ardhana — 5027241118]: Dashboard logic
 
   // Clock
   setInterval(() => {
@@ -540,7 +540,6 @@
 
   // Chart instances
   let donutChart = null, lineChart = null;
-
   const CITY_PALETTE = ["#2563eb","#16a34a","#ca8a04","#ea580c","#7c3aed"];
 
   // --- Summary ---
@@ -551,7 +550,10 @@
       document.getElementById("val-records").textContent = (+r.total_records).toLocaleString("id-ID");
       document.getElementById("val-kota").textContent    = r.kota_terburuk || "--";
       document.getElementById("val-avg").textContent     = r.avg_aqi || "--";
-      document.getElementById("val-pct").textContent     = (r.pct_tidak_sehat || "--") + "%";
+      
+      // FIX BUG PERSENTASE 0: Gunakan pengecekan undefined
+      const pct = r.pct_tidak_sehat !== undefined ? r.pct_tidak_sehat : "--";
+      document.getElementById("val-pct").textContent     = pct + "%";
     } catch(e) {}
   }
 
@@ -621,23 +623,36 @@
     try {
       const r = await fetch("/api/per-jam").then(x => x.json());
       if (r.status !== "ok" || !r.data.length) return;
+
+      // FIX GRAFIK: Paksa sumbu X menampilkan skala mutlak 24 Jam
+      const hoursArray = Array.from({length:24}, (_,i) => `${String(i).padStart(2,"0")}:00`);
+      
       const byCity = {};
       r.data.forEach(d => {
         if (!byCity[d.city]) byCity[d.city] = Array(24).fill(null);
-        byCity[d.city][d.hour] = d.avg_aqi;
+        // Memisahkan "09:00" menjadi angka 9 untuk mencari indeks array
+        const hourIndex = parseInt(d.hour.split(":")[0], 10);
+        if(!isNaN(hourIndex)) {
+            byCity[d.city][hourIndex] = d.avg_aqi;
+        }
       });
-      const hours = Array.from({length:24},(_,i)=>`${String(i).padStart(2,"0")}:00`);
+
       const datasets = Object.entries(byCity).map(([city, vals], i) => ({
-        label: city, data: vals,
+        label: city, 
+        data: vals,
         borderColor: CITY_PALETTE[i % CITY_PALETTE.length],
         backgroundColor: "transparent",
-        tension: 0.4, pointRadius: 2, borderWidth: 2
+        tension: 0.4, 
+        pointRadius: 2, 
+        borderWidth: 2,
+        spanGaps: true
       }));
+
       const ctx = document.getElementById("chartLine").getContext("2d");
       if (lineChart) lineChart.destroy();
       lineChart = new Chart(ctx, {
         type: "line",
-        data: { labels: hours, datasets },
+        data: { labels: hoursArray, datasets },
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
@@ -661,9 +676,13 @@
       if (!r.data.length) return;
       const rows = r.data.map(e => {
         const c = aqiColor(e.aqi);
-        const ts = e.timestamp ? e.timestamp.substring(11,19) : "--";
+        let tsWIB = "--";
+        if(e.timestamp) {
+            const dateUTC = new Date(e.timestamp);
+            tsWIB = dateUTC.toLocaleTimeString("id-ID", {timeZone: "Asia/Jakarta", hour12: false});
+        }
         return `<tr>
-          <td style="font-family:monospace;font-size:11px;color:#9ca3af">${ts}</td>
+          <td style="font-family:monospace;font-size:11px;color:#9ca3af">${tsWIB}</td>
           <td><strong>${e.city||"?"}</strong></td>
           <td><span style="font-weight:700;color:${c}">${e.aqi??"-"}</span></td>
           <td><span class="aqi-badge" style="background:${c}">${aqiLabel(e.aqi)}</span></td>
@@ -673,7 +692,7 @@
       document.getElementById("live-wrap").innerHTML = `
         <table>
           <thead><tr>
-            <th>Waktu</th><th>Kota</th><th>AQI</th><th>Status</th><th>Polutan</th>
+            <th>Waktu (WIB)</th><th>Kota</th><th>AQI</th><th>Status</th><th>Polutan</th>
           </tr></thead>
           <tbody>${rows}</tbody>
         </table>`;
@@ -709,5 +728,3 @@
   setInterval(refreshAll,  30000);
   setInterval(refreshLive, 15000);
 </script>
-</body>
-</html>

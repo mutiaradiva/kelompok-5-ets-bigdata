@@ -33,6 +33,8 @@ services:
     depends_on:
       namenode:
         condition: service_healthy
+    ports:
+      - "9866:9866"
     environment:
       CORE-SITE.XML_fs.defaultFS: hdfs://namenode:8020
       HDFS-SITE.XML_dfs.replication: 1

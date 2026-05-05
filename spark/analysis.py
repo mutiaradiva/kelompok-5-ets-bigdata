@@ -1,4 +1,4 @@
-# [Ananda Fitri Wibowo]: Setup Spark & Read Local Data
+# [Ananda Fitri Wibowo]: Setup Spark & Read HDFS Data
 import os
 os.environ["JAVA_HOME"] = "/usr/lib/jvm/default-java"
 
@@ -13,10 +13,13 @@ spark = SparkSession.builder \
     .appName("AirQualityAnalysis") \
     .getOrCreate()
 
-# MEMBACA LANGSUNG DARI FOLDER LOKAL (Bypass HDFS yang error)
-print("📥 Membaca data API dari folder lokal...")
-path_lokal = "dashboard/data/live_api.json"
-df_api = spark.read.option("multiLine", True).json(path_lokal)
+# ==========================================
+# MEMBACA DARI HADOOP / HDFS
+# ==========================================
+print("📥 Membaca data API dari HDFS...")
+# Pastikan Hadoop NameNode jalan di localhost:9000 dan path file-nya sesuai dengan yang kamu buat di HDFS
+path_hdfs = "hdfs://localhost:8020/data/airquality/api/live_api.json"
+df_api = spark.read.option("multiLine", True).json(path_hdfs)
 df_api.createOrReplaceTempView("air_quality")
 
 # ==========================================

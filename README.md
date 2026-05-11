@@ -234,6 +234,27 @@ Navigasi ke **Utilities → Browse the file system** → masuk ke path `/data/ai
 
 ---
 
+#### 6. Revisi dari Demo Project
+##### a) Spark dapat membaca data dari HDFS
+Berhasil terhubung ke port HDFS, mengubah kode pada "analysis.py".
+- Sebelum:
+```
+path_local_input = "data/airquality/api" 
+df_api = spark.read.option("multiLine", True).json(path_local_input)
+```
+- Sesudah:
+```
+path_hdfs_input = "hdfs://localhost:8020/data/airquality/api"
+path_hdfs_output = "hdfs://localhost:8020/data/airquality/results"
+```
+##### b) Hasil analisis disimpan ke HDFS
+
+##### c) Analisis berjalan secara kontinu
+
+##### d) Memperbaiki tampilan Dashboard
+
+
+
 ### Troubleshooting
 
 | Error | Penyebab | Solusi |

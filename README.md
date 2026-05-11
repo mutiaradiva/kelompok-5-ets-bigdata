@@ -235,7 +235,7 @@ Navigasi ke **Utilities → Browse the file system** → masuk ke path `/data/ai
 ---
 
 ### Revisi dari Demo Project
-##### a) Spark dapat membaca data dari HDFS
+##### 1) Spark dapat membaca data dari HDFS
 Berhasil terhubung ke port HDFS, mengubah kode pada "analysis.py".
 - Sebelum:
 ```
@@ -250,19 +250,19 @@ path_hdfs_output = "hdfs://localhost:8020/data/airquality/results"
 ```
 - Note:
 Agar sparknya dapat berjalan, perlu dilakukan 2 hal tambahan:
-1. Edit file /etc/hosts , tambahkan 127.0.0.1 datanode.
+###### a) Edit file /etc/hosts , tambahkan 127.0.0.1 datanode.
    ```
    nano /etc/hosts
    # tambahkan di paling bawah
    127.0.0.1 datanode
    ```
-2. Setelah docker nyala, jalankan
+###### b) Setelah docker nyala, jalankan
 ```
 docker exec -it hadoop-namenode hdfs dfs -chmod -R 777 /data
 ```
 agar spark-nya mendapat izin untuk menyimpan hasil analisis ke HDFS.
 
-##### b) Hasil analisis disimpan ke HDFS
+##### 2) Hasil analisis disimpan ke HDFS
 Hasil data yang telah dianalisis disimpan ke HDFS:
 - Path tujuan di dalam ekosistem Hadoop:
 ```
@@ -278,7 +278,7 @@ ranking_kota_df.write.mode("overwrite").json(f"{path_hdfs_output}/ranking")
 <img width="1436" height="510" alt="Screenshot 2026-05-05 113147" src="https://github.com/user-attachments/assets/556a4d87-a9be-47bc-9420-e3b1a6af0c15" />
 <img width="1439" height="286" alt="Screenshot 2026-05-05 113039" src="https://github.com/user-attachments/assets/a9c5b1a8-a75e-4cf1-acea-8ef0aa36659a" />
 
-##### c) Analisis berjalan secara kontinu
+##### 3) Analisis berjalan secara kontinu
 Membuat analisis berjalan secara kontinu dan mengupdate analisis setiap 60 detik
 ```
 print("⏳ Memulai mesin Spark (Continuous Streaming Mode)...")
@@ -303,7 +303,7 @@ while True: # Infinite loop agar program tidak pernah mati
 ```
 <img width="1440" height="314" alt="Screenshot 2026-05-05 113310" src="https://github.com/user-attachments/assets/24ad357c-5808-4e80-82d1-b002a1347c86" />
 
-##### d) Memperbaiki tampilan Dashboard
+##### 4) Memperbaiki tampilan Dashboard
 Tampilan dashboard pada bagian "Analisis Tren Waktu" diperbarui.
 <img width="1919" height="1090" alt="Screenshot 2026-05-05 112507" src="https://github.com/user-attachments/assets/8e55b681-2e6d-496c-a762-0c3d78058311" />
 <img width="1919" height="1092" alt="Screenshot 2026-05-05 112527" src="https://github.com/user-attachments/assets/1aa35218-a452-42ad-9db1-1823dfc2d8dc" />

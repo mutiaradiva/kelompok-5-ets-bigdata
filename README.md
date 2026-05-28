@@ -234,6 +234,82 @@ Navigasi ke **Utilities → Browse the file system** → masuk ke path `/data/ai
 
 ---
 
+### Revisi dari Demo Project
+##### 1) Spark dapat membaca data dari HDFS
+Berhasil terhubung ke port HDFS, mengubah kode pada "analysis.py".
+- Sebelum:
+```
+path_local_input = "data/airquality/api" 
+df_api = spark.read.option("multiLine", True).json(path_local_input)
+```
+- Sesudah:
+```
+
+path_hdfs_input = "hdfs://localhost:8020/data/airquality/api"
+path_hdfs_output = "hdfs://localhost:8020/data/airquality/results"
+```
+- Note:
+Agar sparknya dapat berjalan, perlu dilakukan 2 hal tambahan:
+###### a) Edit file /etc/hosts , tambahkan 127.0.0.1 datanode.
+   ```
+   nano /etc/hosts
+   # tambahkan di paling bawah
+   127.0.0.1 datanode
+   ```
+###### b) Setelah docker nyala, jalankan
+```
+docker exec -it hadoop-namenode hdfs dfs -chmod -R 777 /data
+```
+agar spark-nya mendapat izin untuk menyimpan hasil analisis ke HDFS.
+
+##### 2) Hasil analisis disimpan ke HDFS
+Hasil data yang telah dianalisis disimpan ke HDFS:
+- Path tujuan di dalam ekosistem Hadoop:
+```
+path_hdfs_output = "hdfs://localhost:8020/data/airquality/results"
+```
+- Menulis data ke HDFS dengan mode 'overwrite' untuk memperbarui data lama:
+```
+distribusi_df.write.mode("overwrite").json(f"{path_hdfs_output}/distribusi")
+tren_jam_df.write.mode("overwrite").json(f"{path_hdfs_output}/tren_jam")
+ranking_kota_df.write.mode("overwrite").json(f"{path_hdfs_output}/ranking")
+```
+<img width="1419" height="228" alt="Screenshot 2026-05-05 112940" src="https://github.com/user-attachments/assets/fd407ff7-f374-4cc3-bb42-2236cc7d1e18" />
+<img width="1436" height="510" alt="Screenshot 2026-05-05 113147" src="https://github.com/user-attachments/assets/556a4d87-a9be-47bc-9420-e3b1a6af0c15" />
+<img width="1439" height="286" alt="Screenshot 2026-05-05 113039" src="https://github.com/user-attachments/assets/a9c5b1a8-a75e-4cf1-acea-8ef0aa36659a" />
+
+##### 3) Analisis berjalan secara kontinu
+Membuat analisis berjalan secara kontinu dan mengupdate analisis setiap 60 detik
+```
+print("⏳ Memulai mesin Spark (Continuous Streaming Mode)...")
+
+while True: # Infinite loop agar program tidak pernah mati
+    waktu_sekarang = datetime.now().strftime('%H:%M:%S')
+    print(f"\n[{waktu_sekarang}] 📥 Membaca data terbaru dari HDFS...")
+    
+    try:
+        # ... (proses baca data HDFS, dropDuplicates, SQL analisis) ...
+        # ... (proses simpan data ke HDFS & JSON lokal) ...
+
+        print("✅ Analisis batch sukses. Update berikutnya dalam 60 detik...")
+        
+    except Exception as e:
+        # Fault Tolerance: Kalau ada error (misal data kosong), 
+        # mesin tidak mati, melainkan sekadar melapor dan mencoba lagi.
+        print(f"⚠️ Menunggu data masuk: {e}")
+
+    # Jeda komputasi selama 60 detik sebelum melakukan analisis batch selanjutnya
+    time.sleep(60)
+```
+<img width="1440" height="314" alt="Screenshot 2026-05-05 113310" src="https://github.com/user-attachments/assets/24ad357c-5808-4e80-82d1-b002a1347c86" />
+
+##### 4) Memperbaiki tampilan Dashboard
+Tampilan dashboard pada bagian "Analisis Tren Waktu" diperbarui.
+<img width="1919" height="1090" alt="Screenshot 2026-05-05 112507" src="https://github.com/user-attachments/assets/8e55b681-2e6d-496c-a762-0c3d78058311" />
+<img width="1919" height="1092" alt="Screenshot 2026-05-05 112527" src="https://github.com/user-attachments/assets/1aa35218-a452-42ad-9db1-1823dfc2d8dc" />
+<img width="634" height="358" alt="Screenshot 2026-05-05 103742" src="https://github.com/user-attachments/assets/4fa6bb93-d5d3-40d4-a979-9a20672d7909" />
+
+
 ### Troubleshooting
 
 | Error | Penyebab | Solusi |

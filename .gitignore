@@ -7,3 +7,6 @@ env/
 
 # Project data (arahan readme)
 dashboard/data/
+
+# lakehouse data
+lakehouse_data/

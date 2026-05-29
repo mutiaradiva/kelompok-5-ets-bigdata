@@ -71,8 +71,9 @@ Ingest data mentah dari HDFS ke Delta Lake tanpa mengubah konten apapun.
 
 **Output Terminal:**
 
-![Bronze Output](<img width="432" height="46" alt="WhatsApp Image 2026-05-29 at 1 03 43 PM" src="https://github.com/user-attachments/assets/5c0ad466-b910-48af-b944-7636a7868f32" />
-)
+<img width="432" height="46" alt="WhatsApp Image 2026-05-29 at 1 03 43 PM" src="https://github.com/user-attachments/assets/f2154403-8284-4866-ae9e-ab6a1d215f94" />
+
+
 
 **Struktur Folder & Delta Log:**
 

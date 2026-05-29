@@ -77,11 +77,11 @@ Ingest data mentah dari HDFS ke Delta Lake tanpa mengubah konten apapun.
 
 **Struktur Folder & Delta Log:**
 
-![Direktori Lakehouse](<img width="540" height="664" alt="WhatsApp Image 2026-05-29 at 1 06 43 PM" src="https://github.com/user-attachments/assets/5eebb60c-d2cf-4593-bbdd-1b195ce929a5" />
-)
+<img width="540" height="664" alt="WhatsApp Image 2026-05-29 at 1 06 43 PM" src="https://github.com/user-attachments/assets/4510b1d5-8354-4753-8339-e12bfd3a228e" />
 
-![Delta Log](<img width="1515" height="192" alt="WhatsApp Image 2026-05-29 at 1 07 07 PM" src="https://github.com/user-attachments/assets/f2c71ea1-d121-466b-bb2d-8a759ed5cc7d" />
-)
+
+<img width="1515" height="192" alt="WhatsApp Image 2026-05-29 at 1 07 07 PM" src="https://github.com/user-attachments/assets/39d62e5e-afd2-4444-b78b-266738898ac2" />
+
 
 > Folder `_delta_log/` adalah yang membedakan Bronze dari sekadar file Parquet biasa. Setiap operasi tulis dicatat di sini — dari sinilah Time Travel dan ACID bekerja.
 
@@ -100,8 +100,8 @@ Cleaning dan normalisasi data dari Bronze.
 
 **Output Terminal:**
 
-![Silver Output](<img width="462" height="28" alt="WhatsApp Image 2026-05-29 at 1 03 57 PM" src="https://github.com/user-attachments/assets/4bf29ec5-bd7d-4f04-b49f-4c61e8c37121" />
-)
+<img width="462" height="28" alt="WhatsApp Image 2026-05-29 at 1 03 57 PM" src="https://github.com/user-attachments/assets/6dba544a-5904-49c6-971b-09e77e28db9f" />
+
 
 > Jumlah baris di Silver selalu ≤ Bronze. Selisih = jumlah duplikat + record null AQI yang berhasil dibersihkan.
 
@@ -151,8 +151,7 @@ gold_trend = silver \
 
 **Output Terminal:**
 
-![Gold Output](<img width="390" height="448" alt="WhatsApp Image 2026-05-29 at 1 04 08 PM" src="https://github.com/user-attachments/assets/0f3d8609-e800-4ad0-8e08-8bdafdb99d80" />
-)
+<img width="390" height="448" alt="WhatsApp Image 2026-05-29 at 1 04 08 PM" src="https://github.com/user-attachments/assets/cc2f79bf-99d6-45d0-9621-0540050ac8eb" />
 
 ---
 
@@ -170,8 +169,7 @@ Demonstrasi ACID Delta Lake: simulasi data rusak dan recovery.
 
 **Output Terminal:**
 
-![Time Travel Output](<img width="1600" height="1000" alt="WhatsApp Image 2026-05-29 at 1 05 28 PM" src="https://github.com/user-attachments/assets/16eccf30-a37b-4363-8d6e-36001a4f0a54" />
-)
+<img width="1600" height="1000" alt="WhatsApp Image 2026-05-29 at 1 05 28 PM" src="https://github.com/user-attachments/assets/658acfce-39af-4d26-9ad9-e898a04e58c6" />
 
 > Ini tidak mungkin dilakukan dengan HDFS biasa — data yang ditimpa hilang permanen. Delta Lake menyimpan semua versi di `_delta_log/`.
 
@@ -179,8 +177,7 @@ Demonstrasi ACID Delta Lake: simulasi data rusak dan recovery.
 
 ## 5. Verifikasi Semua Layer — `intip_data.py`
 
-![Intip Data Output](<img width="1600" height="1000" alt="WhatsApp Image 2026-05-29 at 1 06 09 PM" src="https://github.com/user-attachments/assets/46bccc4c-46c1-4132-ba3c-e64c882f79fe" />
-)
+<img width="1600" height="1000" alt="WhatsApp Image 2026-05-29 at 1 06 09 PM" src="https://github.com/user-attachments/assets/d065a3aa-22d6-4b25-8eec-5c77f4a6cbd0" />
 
 ---
 
